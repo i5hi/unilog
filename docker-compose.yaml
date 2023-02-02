@@ -1,0 +1,170 @@
+version: "3.8"
+#####################################################################
+services:
+  # unilog-server:
+  #   image: nginx:stable
+  #   container_name: unilog-server
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   networks:
+  #     - unilognet
+  #   links:
+  #     - "unilog-fluentd"
+  #     - "unilog-kibana"
+  #   # logging:
+  #   #   driver: "fluentd"
+  #   #   options:
+  #   #     fluentd-address: "unilog-fluentd:24224"
+  #   #     tag: nginx.access
+  #   volumes:
+  #     - web-root:/var/www/html
+  #     - certbot-etc:/etc/letsencrypt
+  #     - certbot-var:/var/lib/letsencrypt
+  #     - ./nginx/nginx-conf:/etc/nginx/conf.d
+  #     - dhparam:/etc/ssl/certs
+#####################################################################
+  # certbot:
+  #   image: certbot/certbot
+  #   container_name: certificate-authority
+  #   depends_on:
+  #     - nginx
+  #   command: certonly --webroot --webroot-path=/var/www/html --email $EMAIL --agree-tos --no-eff-email --dry-run -d $DOMAIN
+  #   networks:
+  #     - unilognet
+  #   volumes:
+  #     - web-root:/var/www/html
+  #     - certbot-etc:/etc/letsencrypt
+  #     - certbot-var:/var/lib/letsencrypt
+#####################################################################
+  unilog-fluentd:
+    build:
+      context: ./fluentd
+      dockerfile: Dockerfile
+    container_name: unilog-fluentd
+    links:
+      - "unilog-es01"
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      - unilognet
+    volumes:
+      - ./fluentd/conf:/fluentd/etc/
+#####################################################################
+  unilog-es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
+    container_name: unilog-es01
+    environment:
+      - node.name=unilog-es01
+      - xpack.security.enabled=false
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    expose:
+      - 9200
+    ports:
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9300:9300"
+    networks:
+      - unilognet
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - es01-data:/usr/share/elasticsearch/data
+####################################################################
+  # unilog-es02:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
+  #   container_name: unilog-es02
+  #   environment:
+  #     - node.name=unilog-es02
+  #     - cluster.name=es-docker-cluster
+  #     - discovery.seed_hosts=unilog-es01,unilog-es03
+  #     - cluster.initial_master_nodes=unilog-es01
+  #     - xpack.security.enabled=false
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   networks:
+  #     - unilognet
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   volumes:
+  #     - es02-data:/usr/share/elasticsearch/data
+
+  # unilog-es03:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
+  #   container_name: unilog-es03
+  #   environment:
+  #     - node.name=unilog-es03
+  #     - cluster.name=es-docker-cluster
+  #     - discovery.seed_hosts=unilog-es01,unilog-es02
+  #     - cluster.initial_master_nodes=unilog-es01
+  #     - xpack.security.enabled=false
+  #     - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+  #   networks:
+  #     - unilognet
+  #   ulimits:
+  #     memlock:
+  #       soft: -1
+  #       hard: -1
+  #   volumes:
+  #     - es03-data:/usr/share/elasticsearch/data
+####################################################################
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.6.0
+    container_name: unilog-kibana
+    environment:
+      # - SERVER_NAME=localhost
+      - ELASTICSEARCH_HOSTS=http://unilog-es01:9200
+    links:
+      - "unilog-es01"
+      # - "unilog-es02"
+      # - "unilog-es03"
+    expose: 
+      - 5601
+    ports:
+      - "5601:5601"
+    networks:
+      - unilognet
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+#####################################################################
+volumes:
+  certbot-etc:
+    # driver: local
+    # driver_opts:
+    #   type: none
+    #   device: $CERTS_VOLUME/certbot/etc
+    #   o: bind
+#####################################################################
+  certbot-var:
+    # driver: local
+    # driver_opts:
+    #   type: none
+    #   device: $CERTS_VOLUME/certbot/var
+    #   o: bind
+#####################################################################
+  dhparam:
+    # driver: local
+    # driver_opts:
+    #   type: none
+    #   device: $CERTS_VOLUME
+    #   o: bind
+#####################################################################  
+  web-root:
+  es01-data:
+  es02-data:
+  es03-data:
+#####################################################################
+networks:
+  unilognet:
+    driver: bridge
+#####################################################################
