@@ -2,9 +2,9 @@
 
 A unified log aggregation and management service that uses:
 
-- fluentd: to ship logs from all services to unilog.
-- elasticsearch: to store and query log data
-- kibana: to visualize log data
+- fluentd: to parse and forward logs from various sources [@forward(like syslog), @tail(from files) .
+- elasticsearch: to store and query data
+- kibana: to visualize data
 - nginx(certbot): to provide a http(s) entrypoint into kibana at a given domain name. eg. logs.yoursite.xyz
 
 ## configurations
@@ -15,14 +15,21 @@ All services must run a fluentd agent that forwards its logs to this service (un
 
 unilog sets a `shared_secret` that agents must use to authenticate.
 
-Mutual TLS/SSL is enabled so logs are encrypted in transit (via nginx).
+DO NOT USE IN PRODUCTION.
+
+Mutual TLS/SSL is not stable so logs are not encrypted in transit.
 
 The above settings are documented here: [fluend input forward documentation.](https://docs.fluentd.org/input/forward)
 
 ### elasticsearch
 
+Single node development setup.
+
+Security is not enabled. Not suitable for production.
+
+Safe to use locally.
+
 ### kibana
 
-### nginx
+Development setup.
 
-nginx is used to redirect requests for both kibana at @443 and fluentd @22866
