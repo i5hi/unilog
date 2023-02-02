@@ -7,29 +7,22 @@ A unified log aggregation and management service that uses:
 - kibana: to visualize data
 - nginx(certbot): to provide a http(s) entrypoint into kibana at a given domain name. eg. logs.yoursite.xyz
 
+## run
+
+```
+docker compose up
+```
+
 ## configurations
 
-### fluentd
+DO NOT USE IN PRODUCTION. 
 
-All services must run a fluentd agent that forwards its logs to this service (unilog).
+You can bring in log files safely (over scp) from production servers into a local deployment of unilog for analysis.
 
-unilog sets a `shared_secret` that agents must use to authenticate.
+Production ready config is in progress and will be stablized soon.
 
-DO NOT USE IN PRODUCTION.
+### production config requirements
 
-Mutual TLS/SSL is not stable so logs are not encrypted in transit.
-
-The above settings are documented here: [fluend input forward documentation.](https://docs.fluentd.org/input/forward)
-
-### elasticsearch
-
-Single node development setup.
-
-Security is not enabled. Not suitable for production.
-
-Safe to use locally.
-
-### kibana
-
-Development setup.
-
+- fluentd must only use `secure_forward` with a strong `shared_secret`, `authentication` and SSL/TLS `ca_cert` & `ca_key`.
+- elastic search requires a multi-node configuration. Authentication must also be configured.
+- kibana-es authentication must be set. TLS/SSL is required if you intend to use kibana remotely.
