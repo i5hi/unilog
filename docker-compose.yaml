@@ -39,7 +39,7 @@ services:
 #####################################################################
   unilog-fluentd:
     build:
-      context: ./fluentd
+      context: ./server/fluentd
       dockerfile: Dockerfile
     container_name: unilog-fluentd
     links:
@@ -50,7 +50,7 @@ services:
     networks:
       - unilognet
     volumes:
-      - ./fluentd/conf:/fluentd/etc/
+      - ./server/fluentd/conf:/fluentd/etc/
 #####################################################################
   unilog-es01:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.6.0
